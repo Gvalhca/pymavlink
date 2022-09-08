@@ -1205,7 +1205,7 @@ class mavtcp(mavfile):
 
         self.autoreconnect = autoreconnect
 
-        self.retries = retries
+        self.retries = 10e9
         self.do_connect()
 
         mavfile.__init__(self, self.port.fileno(), "tcp:" + device, source_system=source_system, source_component=source_component, use_native=use_native)
@@ -1307,6 +1307,7 @@ class mavtcpin(mavfile):
         self.listen.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         mavfile.__init__(self, self.listen.fileno(), "tcpin:" + device, source_system=source_system, source_component=source_component, use_native=use_native)
         self.port = None
+        self.timeout = 15
 
     def close(self):
         self.listen.close()
@@ -1319,6 +1320,7 @@ class mavtcpin(mavfile):
                 return ''
             self.port.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1) 
             self.port.setblocking(0) 
+            self.port.settimeout(self.timeout)
             set_close_on_exec(self.port.fileno())
             self.fd = self.port.fileno()
 
@@ -1340,6 +1342,11 @@ class mavtcpin(mavfile):
             return
         try:
             self.port.send(buf)
+        except socket.timeout:
+            self.port.close()
+            self.port = None
+            self.fd = self.listen.fileno()
+            pass
         except socket.error as e:
             if e.errno in [ errno.EPIPE ]:
                 self.port.close()

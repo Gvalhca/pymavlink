@@ -6,6 +6,8 @@ Copyright Andrew Tridgell 2011-2019
 Released under GNU LGPL version 3 or later
 '''
 from __future__ import print_function
+
+import datetime
 from builtins import object
 
 import socket, math, struct, time, os, fnmatch, array, sys, errno
@@ -1308,6 +1310,27 @@ class mavtcpin(mavfile):
         mavfile.__init__(self, self.listen.fileno(), "tcpin:" + device, source_system=source_system, source_component=source_component, use_native=use_native)
         self.port = None
         self.timeout = 15
+        self.recv_last_time = datetime.datetime.now()
+
+    def reconnect(self):
+        if self.port is None:
+            try:
+                (self.port, addr) = self.listen.accept()
+                if self.port is not None:
+                    return True
+            except Exception as e:
+                print(e)
+                return False
+            self.port.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+            self.port.setblocking(0)
+            self.port.settimeout(self.timeout)
+            set_close_on_exec(self.port.fileno())
+            self.fd = self.port.fileno()
+
+    def close_port(self):
+        if self.port is not None:
+            self.port.close()
+            self.port = None
 
     def close(self):
         self.listen.close()

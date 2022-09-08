@@ -1319,7 +1319,7 @@ class mavtcpin(mavfile):
             except Exception:
                 return ''
             self.port.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1) 
-            self.port.setblocking(0) 
+            self.port.setblocking(0)
             self.port.settimeout(self.timeout)
             set_close_on_exec(self.port.fileno())
             self.fd = self.port.fileno()
@@ -1731,7 +1731,7 @@ def mavlink_connection(device, baud=115200, source_system=255, source_component=
         set_dialect(dialect)
     if device.startswith('tcp:'):
         return mavtcp(device[4:],
-                      autoreconnect=autoreconnect,
+                      autoreconnect=True,
                       source_system=source_system,
                       source_component=source_component,
                       retries=retries,
